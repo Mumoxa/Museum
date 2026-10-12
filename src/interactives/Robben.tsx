@@ -14,7 +14,7 @@ export function Robben() {
   return (
     <div className="robben">
       <div className="photo-hotspot">
-        <img src="/images/photos/cape-town-robben-island.jpg" alt="Cape Town and Table Bay seen from Table Mountain, with Robben Island visible as a small island on the left." loading="lazy" />
+        <img src={`${import.meta.env.BASE_URL}images/photos/cape-town-robben-island.jpg`} alt="Cape Town and Table Bay seen from Table Mountain, with Robben Island visible as a small island on the left." loading="lazy" />
         <button
           type="button"
           className="hotspot"

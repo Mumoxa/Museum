@@ -1,6 +1,6 @@
 import type { Chapter } from './types';
 
-const PHOTO = '/images/photos/';
+const PHOTO = `${import.meta.env.BASE_URL}images/photos/`;
 
 export const part1: Chapter[] = [
   // ───────────────────────────── PROLOGUE ─────────────────────────────
