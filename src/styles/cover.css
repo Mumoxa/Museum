@@ -1,0 +1,224 @@
+/* ============================================================================
+   THE COVER - a book on a desk at night, and the light that opens it
+   ========================================================================= */
+
+.cover-stage {
+  position: relative;
+  min-height: 100dvh;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: var(--s-5);
+  padding: var(--s-6) var(--s-4) calc(var(--s-7) + env(safe-area-inset-bottom));
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* The desk. A slow warm radial, no gradient mesh, no purple. */
+.cover-desk {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(58% 44% at 50% 34%, rgba(255, 214, 128, .22), transparent 68%),
+    radial-gradient(90% 70% at 50% 90%, rgba(120, 78, 30, .18), transparent 70%),
+    linear-gradient(178deg, #0d121b 0%, #141a25 46%, #0a0e15 100%);
+}
+
+/* Dust in the lamp light. Fixed, pointer-events:none, transform-only. */
+.motes { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.mote {
+  position: absolute;
+  width: 2px; height: 2px;
+  border-radius: 50%;
+  background: rgba(255, 232, 178, .8);
+  box-shadow: 0 0 6px rgba(255, 226, 160, .7);
+  animation: mote-drift linear infinite;
+}
+@keyframes mote-drift {
+  0%   { transform: translate3d(0, 0, 0) scale(.6); opacity: 0; }
+  12%  { opacity: .85; }
+  88%  { opacity: .7; }
+  100% { transform: translate3d(18px, -74vh, 0) scale(1); opacity: 0; }
+}
+
+/* -- The book itself ------------------------------------------------------- */
+.cover-book {
+  position: relative;
+  width: min(360px, 78vw);
+  aspect-ratio: 5 / 7;
+  perspective: 1700px;
+  perspective-origin: 26% 50%;
+}
+
+/* The stacked page block and the back board, seen edge-on. */
+.cover-block {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--r-edge) var(--r-plate) var(--r-plate) var(--r-edge);
+  background:
+    repeating-linear-gradient(90deg, #cdc4a8 0 1px, #e2dac2 1px 3px);
+  box-shadow: var(--lift-page);
+  transform: translate3d(6px, 5px, -14px);
+}
+
+/* Front board: oxblood leather, gilt rules, blind-tooled corner fans. */
+.cover-front {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  border-radius: var(--r-edge) var(--r-board) var(--r-board) var(--r-edge);
+  background:
+    radial-gradient(120% 90% at 20% 12%, rgba(255, 190, 120, .16), transparent 55%),
+    radial-gradient(80% 70% at 84% 88%, rgba(0, 0, 0, .5), transparent 60%),
+    repeating-linear-gradient(118deg, rgba(255, 255, 255, .022) 0 2px, transparent 2px 5px),
+    linear-gradient(158deg, #5c2f20 0%, #40201a 44%, #2a1310 100%);
+  box-shadow:
+    inset 0 0 0 2px #2a1310,
+    inset 0 0 60px rgba(0, 0, 0, .55),
+    var(--lift-page);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding: clamp(18px, 5.4vw, 30px);
+  overflow: hidden;
+  backface-visibility: hidden;
+}
+
+/* Gilt frame: two hairlines, hand-set look. */
+.cover-front::before {
+  content: '';
+  position: absolute;
+  inset: clamp(10px, 3vw, 15px);
+  border: 1px solid rgba(201, 162, 39, .62);
+  border-radius: var(--r-hair);
+  pointer-events: none;
+}
+.cover-front::after {
+  content: '';
+  position: absolute;
+  inset: clamp(14px, 4vw, 20px);
+  border: 1px solid rgba(201, 162, 39, .3);
+  pointer-events: none;
+}
+
+.cover-top { text-align: center; }
+.cover-press {
+  font-family: var(--f-body);
+  font-size: var(--t-meta-wide);
+  letter-spacing: .28em;
+  text-transform: uppercase;
+  color: rgba(232, 200, 92, .78);
+  margin: 0;
+}
+
+.cover-mid {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: var(--s-3);
+  text-align: center;
+  padding-block: var(--s-3);
+}
+
+/* The title. The glimmer is a specular band that travels across the gilt
+   on first touch, then settles. */
+.cover-title {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: clamp(1.72rem, 1.1rem + 3.4vw, 2.5rem);
+  line-height: 1.02;
+  letter-spacing: .004em;
+  margin: 0;
+  padding-bottom: .06em;
+  background: linear-gradient(
+    100deg,
+    #a8842c 0%, #a8842c 34%,
+    #ffeaa7 47%, #fffbe8 50%, #ffeaa7 53%,
+    #a8842c 66%, #a8842c 100%
+  );
+  background-size: 340% 100%;
+  background-position: 118% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  transition: background-position 1500ms var(--ease-out);
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, .6));
+}
+.cover-title[data-lit='1'] { background-position: -18% 0; }
+
+.cover-sub {
+  font-family: var(--f-display);
+  font-style: italic;
+  font-size: clamp(1rem, .82rem + 1vw, 1.22rem);
+  line-height: 1.3;
+  color: #e9d7a6;
+  margin: 0;
+  max-width: 26ch;
+}
+
+.cover-rule {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  width: min(220px, 70%);
+  color: rgba(201, 162, 39, .75);
+}
+.cover-rule::before, .cover-rule::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, currentColor, transparent);
+}
+
+.cover-foot {
+  text-align: center;
+  font-size: var(--t-meta);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: rgba(233, 215, 166, .62);
+  margin: 0;
+}
+
+/* The open call to action, sitting below the book. */
+.cover-actions {
+  display: grid;
+  gap: var(--s-3);
+  justify-items: center;
+  text-align: center;
+  z-index: 2;
+  max-width: 46ch;
+}
+.cover-hint {
+  font-size: var(--t-body-tight);
+  color: var(--d-text-soft);
+  margin: 0;
+}
+
+/* Opening: the board swings, the room floods with light, then we cut. */
+.cover-front[data-opening='1'] { animation: cover-open 1180ms var(--ease-page) forwards; }
+@keyframes cover-open {
+  0%   { transform: rotateY(0deg); }
+  62%  { transform: rotateY(-124deg); }
+  100% { transform: rotateY(-172deg); }
+}
+.cover-flood {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-scrim);
+  pointer-events: none;
+  background: radial-gradient(38% 30% at 50% 42%, #fff6d8 0%, rgba(255, 232, 168, .72) 32%, rgba(255, 214, 120, 0) 74%);
+  opacity: 0;
+  animation: flood 1180ms var(--ease-out) forwards;
+}
+@keyframes flood {
+  0% { opacity: 0; }
+  46% { opacity: .95; }
+  100% { opacity: 1; }
+}
+
+@media (min-width: 900px) {
+  .cover-stage { grid-template-columns: minmax(0, 1fr); }
+  .cover-book { width: min(420px, 40vw); }
+}

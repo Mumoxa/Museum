@@ -9,5 +9,18 @@ export default defineConfig(({ command }) => ({
   plugins: [react()],
   server: { host: '0.0.0.0', port: 5173, allowedHosts: true },
   preview: { host: '0.0.0.0', port: 4173, allowedHosts: true },
-  build: { target: 'es2020', chunkSizeWarningLimit: 900 },
+  build: {
+    target: 'es2020',
+    chunkSizeWarningLimit: 620,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          /* The world map used by the globe and the sea-route device is the only
+             large data left, so it is split away from the first page. */
+          'world-110m': ['world-atlas/countries-110m.json'],
+          react: ['react', 'react-dom'],
+        },
+      },
+    },
+  },
 }));

@@ -1,23 +1,42 @@
-import { lazy, Suspense } from 'react';
-import { Compass } from './Compass';
-import { Globe } from './Globe';
-import { InkMap } from './InkMap';
-import { ShipRoute } from './ShipRoute';
-import { Castle } from './Castle';
-import { Robben } from './Robben';
-import { Territory } from './Territory';
-import { Democracy } from './Democracy';
-import { Votes } from './Votes';
-import { Portraits } from './Portraits';
-import { Timeline } from './Timeline';
-import { MatchPuzzle, OrderPuzzle } from './Puzzles';
-import { Journey } from './Journey';
+import { lazy, Suspense, type ReactNode } from 'react';
 
-// The certificate is loaded only when it is needed.
+/* ============================================================================
+   THE DEVICES
+   ----------------------------------------------------------------------------
+   Every interactive device in the book is loaded only when a page that uses
+   it is actually read. They are leaves: nothing about the surrounding page
+   depends on them, so nothing about the first paint should pay for them.
+   The world map used by the globe, and the atlas data, arrive this way too.
+   ========================================================================= */
+
+const Compass = lazy(() => import('./Compass').then((m) => ({ default: m.Compass })));
+const Globe = lazy(() => import('./Globe').then((m) => ({ default: m.Globe })));
+const InkMap = lazy(() => import('./InkMap').then((m) => ({ default: m.InkMap })));
+const ShipRoute = lazy(() => import('./ShipRoute').then((m) => ({ default: m.ShipRoute })));
+const Castle = lazy(() => import('./Castle').then((m) => ({ default: m.Castle })));
+const Robben = lazy(() => import('./Robben').then((m) => ({ default: m.Robben })));
+const Territory = lazy(() => import('./Territory').then((m) => ({ default: m.Territory })));
+const Democracy = lazy(() => import('./Democracy').then((m) => ({ default: m.Democracy })));
+const Votes = lazy(() => import('./Votes').then((m) => ({ default: m.Votes })));
+const Portraits = lazy(() => import('./Portraits').then((m) => ({ default: m.Portraits })));
+const Timeline = lazy(() => import('./Timeline').then((m) => ({ default: m.Timeline })));
+const MatchPuzzle = lazy(() => import('./Puzzles').then((m) => ({ default: m.MatchPuzzle })));
+const OrderPuzzle = lazy(() => import('./Puzzles').then((m) => ({ default: m.OrderPuzzle })));
+const Journey = lazy(() => import('./Journey').then((m) => ({ default: m.Journey })));
 const Certificate = lazy(() => import('./Certificate').then((m) => ({ default: m.Certificate })));
 
+/** Reserve the space a device will need, so nothing jumps when it arrives. */
+function DeviceSkeleton() {
+  return (
+    <div className="device-skeleton" role="status" aria-live="polite">
+      <span className="device-skeleton-label">Opening the instrument</span>
+      <span className="device-skeleton-block" />
+    </div>
+  );
+}
+
 export function Interactive({ name, note }: { name: string; note?: string; chapterId: string; pageIndex: number }) {
-  let node: JSX.Element | null;
+  let node: ReactNode = null;
   switch (name) {
     case 'compass': node = <Compass />; break;
     case 'globe': node = <Globe />; break;
@@ -33,8 +52,9 @@ export function Interactive({ name, note }: { name: string; note?: string; chapt
     case 'match': node = <MatchPuzzle note={note} />; break;
     case 'order': node = <OrderPuzzle note={note} />; break;
     case 'journey': node = <Journey />; break;
-    case 'certificate': node = <Suspense fallback={<p>Loading the certificate…</p>}><Certificate /></Suspense>; break;
+    case 'certificate': node = <Certificate />; break;
     default: node = null;
   }
-  return node;
+  if (!node) return null;
+  return <Suspense fallback={<DeviceSkeleton />}>{node}</Suspense>;
 }

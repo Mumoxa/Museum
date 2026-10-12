@@ -6,7 +6,12 @@ import { CHAPTERS } from '../content';
 
 const EMPTY_ANSWERS: Record<number, number> = {};
 
-export function Quiz({ chapterId, questions }: { chapterId: string; questions: QuizQ[] }) {
+export function Quiz({ chapterId, questions, pageTitle }: {
+  chapterId: string;
+  questions: QuizQ[];
+  /** The title of the page this quiz sits on, so the heading is not repeated. */
+  pageTitle?: string;
+}) {
   const answers = useAppState((s) => s.progress.quiz[chapterId] ?? EMPTY_ANSWERS);
   const sound = useAppState((s) => s.settings.sound);
   const volume = useAppState((s) => s.settings.soundVolume);
@@ -33,9 +38,14 @@ export function Quiz({ chapterId, questions }: { chapterId: string; questions: Q
     }
   }
 
+  /* Every quiz in this book sits on a page already called "Quick check", so the
+     widget does not say it twice. It keeps its own heading when a page is
+     called something else. */
+  const heading = (pageTitle ?? '').trim().toLowerCase() === 'quick check' ? null : 'Quick check';
+
   return (
-    <section className="quiz" aria-labelledby={`quiz-${chapterId}`}>
-      <h3 id={`quiz-${chapterId}`} className="quiz-title">Quick check</h3>
+    <section className="quiz" aria-label={heading ? undefined : 'Quick check'} aria-labelledby={heading ? `quiz-${chapterId}` : undefined}>
+      {heading && <h3 id={`quiz-${chapterId}`} className="quiz-title">{heading}</h3>}
       <p className="quiz-intro">Tap an answer. You can change your mind. The explanation appears after each choice.</p>
       <ol className="quiz-list">
         {questions.map((q, qi) => {

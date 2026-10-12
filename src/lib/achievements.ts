@@ -9,9 +9,13 @@ export interface Badge {
 }
 
 export const BADGES: Badge[] = [
-  { id: 'opened', label: 'Book Opener', hint: 'Open My History Book for the first time.' },
+  { id: 'opened', label: 'Book Opener', hint: 'Open the history book for the first time.' },
+  { id: 'first-find', label: 'First Find', hint: 'Catch your first hidden object on a page.' },
+  { id: 'curator', label: 'Curator', hint: 'Collect every hidden object in the whole book.' },
+  { id: 'cartographer', label: 'Cartographer', hint: 'Open every chapter on the expedition map.' },
   { id: 'first-turn', label: 'First Turn', hint: 'Turn your first page.' },
   { id: 'narrator', label: 'Story Listener', hint: 'Have a page read aloud.' },
+  { id: 'streak-5', label: 'Five in a Row', hint: 'Answer five quiz questions correctly without a miss.' },
   { id: 'glossary-5', label: 'Word Collector', hint: 'Tap and define five words.' },
   { id: 'bookmark', label: 'Bookmarker', hint: 'Save a bookmark.' },
   { id: 'quiz-first', label: 'First Answer', hint: 'Answer your first quiz question.' },

@@ -1,0 +1,499 @@
+/* ============================================================================
+   THE ATLAS EXPLORER
+   A copperplate on a dark desk. The plate is the only lit object in the room.
+   ========================================================================= */
+
+.atlas-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-scrim);
+  display: grid;
+  place-items: center;
+  padding: var(--s-4);
+  padding-bottom: calc(var(--s-4) + env(safe-area-inset-bottom));
+  background:
+    radial-gradient(80% 60% at 50% 40%, rgba(6, 10, 16, .82), rgba(4, 6, 11, .97));
+  animation: scrim-in var(--d-shift) var(--ease-out) both;
+}
+@keyframes scrim-in { from { opacity: 0; } to { opacity: 1; } }
+
+.atlas-sheet {
+  position: relative;
+  width: min(1220px, 100%);
+  max-height: min(94dvh, 1000px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: var(--s-4);
+  padding: var(--s-5);
+  border-radius: var(--r-plate);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .035), transparent 30%),
+    var(--deep);
+  border: 1px solid var(--deep-line);
+  box-shadow: var(--lift-3);
+  animation: sheet-in var(--d-scene) var(--ease-out) both;
+  overflow: hidden;
+}
+@keyframes sheet-in {
+  from { opacity: 0; transform: translateY(16px) scale(.985); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* -- Head ------------------------------------------------------------------ */
+.atlas-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-4);
+  flex-wrap: wrap;
+}
+.atlas-h {
+  font-size: clamp(1.5rem, 1.1rem + 1.4vw, 2.1rem);
+  color: var(--d-text);
+}
+.atlas-sub {
+  color: var(--d-text-soft);
+  font-size: var(--t-body-tight);
+  max-width: 52ch;
+  margin: var(--s-1) 0 0;
+}
+.atlas-head-tools { display: flex; align-items: center; gap: var(--s-3); }
+
+.level-switch {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--r-plate);
+  background: var(--void);
+  border: 1px solid var(--deep-line);
+}
+.level-switch .tag {
+  border: 0;
+  background: transparent;
+  color: var(--d-text-faint);
+  box-shadow: none;
+}
+.level-switch .tag[aria-pressed='true'] {
+  background: linear-gradient(180deg, var(--gold-lit), var(--gold));
+  color: #191203;
+}
+
+/* -- Body ------------------------------------------------------------------ */
+.atlas-body {
+  display: grid;
+  gap: var(--s-4);
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 1040px) {
+  .atlas-body { grid-template-columns: minmax(0, 1.62fr) minmax(280px, .78fr); }
+}
+
+.plate-wrap {
+  position: relative;
+  min-height: 0;
+  display: grid;
+  border-radius: var(--r-plate);
+  padding: var(--s-3);
+  background:
+    radial-gradient(90% 70% at 50% 10%, rgba(255, 226, 150, .1), transparent 62%),
+    #0a0d13;
+  border: 1px solid var(--deep-line);
+  overflow: hidden;
+}
+.plate {
+  width: 100%;
+  height: 100%;
+  max-height: 62dvh;
+  border-radius: var(--r-hair);
+  box-shadow: inset 0 0 0 1px rgba(201, 162, 39, .35), 0 20px 50px -20px rgba(0, 0, 0, .9);
+}
+.plate-cape { max-height: 58dvh; }
+
+/* Paper edge: a hairline of lifted sheet on the far side. */
+.plate-edge {
+  position: absolute;
+  inset: var(--s-3);
+  pointer-events: none;
+  border-radius: var(--r-hair);
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, .55);
+}
+
+/* -- Site marks ------------------------------------------------------------ */
+.site { cursor: pointer; }
+.site-label {
+  font-family: var(--f-body);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .015em;
+  fill: #f0e6c8;
+  paint-order: stroke;
+  stroke: rgba(8, 12, 18, .92);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.site-dot {
+  fill: var(--gold);
+  stroke: #10141c;
+  stroke-width: 2;
+  transition: r var(--d-flick) var(--ease-out), fill var(--d-flick) linear;
+}
+.site-halo {
+  fill: none;
+  stroke: rgba(201, 162, 39, .5);
+  stroke-width: 1.4;
+  opacity: 0;
+  transition: opacity var(--d-shift) linear;
+}
+.site-hit { fill: rgba(0, 0, 0, 0); cursor: pointer; }
+
+.site.is-done .site-dot { fill: var(--verify-lit); }
+.site.is-here .site-dot { fill: #fff3c4; }
+.site.is-here .site-halo { opacity: 1; animation: halo-pulse 2400ms var(--ease-out) infinite; }
+@keyframes halo-pulse {
+  0%, 100% { r: 12; opacity: .85; }
+  50% { r: 22; opacity: .15; }
+}
+.site:hover .site-dot, .site-hit:focus-visible + .site-dot { r: 9; }
+.site-hit:focus-visible { outline: 3px solid var(--gold-lit); outline-offset: 2px; border-radius: var(--r-seal); }
+
+/* The mountain marks unfold upward from their own base line, once. */
+.ridges path, .ridge-solo {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: ridge-rise 900ms var(--ease-out) both;
+}
+@keyframes ridge-rise {
+  from { transform: scaleY(.08) scaleX(.9); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+/* Site marks follow the mountains in, staggered. */
+.sites .site {
+  transform-box: fill-box;
+  animation: site-in 520ms var(--ease-out) both;
+}
+@keyframes site-in {
+  from { opacity: 0; transform: scale(.5); }
+  to   { opacity: 1; }
+}
+/* Once the sequence has played, everything is simply present. */
+.atlas-sheet:not([data-intro]) .ridges path,
+.atlas-sheet:not([data-intro]) .ridge-solo,
+.atlas-sheet:not([data-intro]) .sites .site { animation: none; }
+.atlas-sheet[data-intro] .site-halo { opacity: 0; }
+
+.rose-n { font-family: var(--f-body); font-size: 12px; font-weight: 700; fill: rgba(233, 215, 166, .8); }
+.plate-caption {
+  font-family: var(--f-body);
+  font-size: 11.5px;
+  letter-spacing: .03em;
+  fill: rgba(233, 215, 166, .72);
+}
+.ridge-label { font-size: 11.5px; }
+
+/* -- The chapter index ----------------------------------------------------- */
+.atlas-index {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--s-2);
+  min-height: 0;
+  border-left: 1px solid var(--deep-line);
+  padding-left: var(--s-4);
+}
+@media (max-width: 1039px) {
+  .atlas-index { border-left: 0; padding-left: 0; border-top: 1px solid var(--deep-line); padding-top: var(--s-3); }
+}
+.atlas-index-h {
+  font-size: 1.05rem;
+  color: var(--d-text-soft);
+  font-family: var(--f-body);
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  font-size: var(--t-meta);
+}
+.leg-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: grid;
+  gap: 2px;
+  align-content: start;
+}
+.leg-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 3px 2.2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-3);
+  text-align: left;
+  padding: var(--s-2) var(--s-3) var(--s-2) 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid rgba(51, 64, 79, .6);
+  cursor: pointer;
+  color: var(--d-text-soft);
+  transition: background-color var(--d-flick) linear, color var(--d-flick) linear;
+}
+.leg-row:hover { background: rgba(255, 255, 255, .045); color: var(--d-text); }
+.leg-row.is-here { color: var(--gold-lit); }
+.leg-row.is-here .leg-title { font-weight: 700; }
+.leg-swatch {
+  display: block;
+  width: 3px;
+  height: 26px;
+  border-radius: var(--r-edge);
+  background: linear-gradient(180deg, var(--era-glow), var(--era-mid));
+}
+.leg-no {
+  font-family: var(--f-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--era-glow, var(--gold-lit));
+  line-height: 1;
+}
+.leg-title { font-size: var(--t-body-tight); line-height: 1.25; }
+.leg-marks { display: flex; align-items: center; gap: var(--s-2); }
+.leg-relic { font-size: .72rem; letter-spacing: .06em; color: var(--d-text-faint); }
+.leg-stamp { color: var(--verify-lit); }
+
+/* -- The era drawer -------------------------------------------------------- */
+.era-drawer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  padding: var(--s-4);
+  background: linear-gradient(0deg, rgba(6, 9, 15, .96), rgba(6, 9, 15, .86));
+  animation: scrim-in var(--d-shift) var(--ease-out) both;
+  overflow-y: auto;
+}
+.era-drawer-inner {
+  width: min(760px, 100%);
+  display: grid;
+  gap: var(--s-5);
+  border-radius: var(--r-plate);
+  border: 1px solid var(--deep-line);
+  border-top: 3px solid var(--era-glow);
+  background:
+    radial-gradient(120% 60% at 20% 0%, color-mix(in srgb, var(--era-deep) 70%, transparent), transparent 70%),
+    var(--deep-2);
+  padding: var(--s-5);
+  box-shadow: var(--lift-3);
+  animation: drawer-in var(--d-rise) var(--ease-out) both;
+}
+@media (min-width: 780px) {
+  .era-drawer-inner { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: start; }
+}
+@keyframes drawer-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.era-plate-fig {
+  position: relative;
+  margin: 0;
+  border-radius: var(--r-plate);
+  overflow: hidden;
+  border: 1px solid rgba(201, 162, 39, .45);
+  box-shadow: var(--lift-3);
+}
+.era-plate-fig img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.era-plate-wash {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--era-deep) 55%, transparent), transparent 60%);
+  mix-blend-mode: multiply;
+}
+
+.era-drawer-text { display: grid; gap: var(--s-2); align-content: start; }
+.era-drawer-h { font-size: clamp(1.4rem, 1.1rem + 1.2vw, 2rem); color: var(--d-text); }
+.era-drawer-sub { color: var(--d-text-soft); font-size: var(--t-body-tight); margin: 0; }
+.era-drawer-mood {
+  font-family: var(--f-display);
+  font-style: italic;
+  font-size: 1.15rem;
+  color: var(--era-glow);
+  margin: var(--s-2) 0;
+  padding-bottom: .06em;
+}
+.era-find-label { margin-top: var(--s-3); color: var(--era-glow); }
+.relic-list {
+  list-style: none;
+  margin: var(--s-2) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--s-1);
+}
+.relic-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  font-size: var(--t-body-tight);
+  color: var(--d-text-faint);
+  padding: var(--s-1) 0;
+}
+.relic-list li.is-found { color: var(--d-text); }
+.relic-mark {
+  display: grid;
+  place-items: center;
+  width: 24px; height: 24px;
+  border-radius: var(--r-seal);
+  border: 1px dashed var(--deep-line);
+  color: var(--d-text-faint);
+  flex: none;
+}
+.relic-mark.is-found { border: 1px solid var(--verify-lit); color: var(--verify-lit); }
+.era-drawer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  margin-top: var(--s-4);
+}
+
+/* -- Foot ------------------------------------------------------------------ */
+.atlas-foot {
+  display: flex;
+  gap: var(--s-3);
+  align-items: flex-start;
+  color: var(--d-text-faint);
+  font-size: .78rem;
+  line-height: 1.5;
+  border-top: 1px solid var(--deep-line);
+  padding-top: var(--s-3);
+}
+.atlas-foot svg { flex: none; margin-top: 2px; color: var(--gold-line); }
+
+/* -- The find: a stamped ring, once --------------------------------------- */
+.relic-burst {
+  position: fixed;
+  left: 50%;
+  bottom: calc(184px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: var(--z-relic);
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.relic-burst-ring {
+  position: absolute;
+  width: 84px; height: 84px;
+  border-radius: 50%;
+  border: 2px solid var(--gold-lit);
+  animation: burst-ring 900ms var(--ease-out) forwards;
+}
+@keyframes burst-ring {
+  0% { transform: scale(.2); opacity: 1; }
+  70% { transform: scale(1.5); opacity: .5; }
+  100% { transform: scale(2); opacity: 0; }
+}
+.relic-burst-text {
+  margin-top: 4px;
+  background: var(--deep-2);
+  border: 1px solid var(--gold-line);
+  color: var(--gold-lit);
+  font-weight: 700;
+  font-size: .86rem;
+  padding: var(--s-1) var(--s-3);
+  border-radius: var(--r-plate);
+  white-space: nowrap;
+  animation: burst-text 1600ms var(--ease-out) forwards;
+}
+@keyframes burst-text {
+  0% { opacity: 0; transform: translateY(12px); }
+  14% { opacity: 1; transform: none; }
+  78% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-10px); }
+}
+
+/* A marker that stands for several places: a ring around the dot. */
+.site.is-cluster .site-cluster-ring {
+  fill: none;
+  stroke: rgba(201, 162, 39, .75);
+  stroke-width: 1.6;
+  stroke-dasharray: 3 3;
+}
+.site.is-cluster .site-label { font-style: italic; }
+.site-hit:focus-visible ~ .site-label { fill: #fff8e0; }
+
+/* The chooser for a shared spot. */
+.cluster-sheet {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  padding: var(--s-4);
+  background: linear-gradient(0deg, rgba(6, 9, 15, .96), rgba(6, 9, 15, .88));
+  animation: scrim-in var(--d-shift) var(--ease-out) both;
+}
+.cluster-inner {
+  width: min(520px, 100%);
+  display: grid;
+  gap: var(--s-3);
+  padding: var(--s-5);
+  border-radius: var(--r-plate);
+  border: 1px solid var(--deep-line);
+  border-top: 2px solid var(--gold);
+  background: var(--deep-2);
+  box-shadow: var(--lift-3);
+  animation: drawer-in var(--d-rise) var(--ease-out) both;
+}
+.cluster-h { font-size: clamp(1.3rem, 1.1rem + 1vw, 1.8rem); color: var(--d-text); }
+.cluster-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
+.cluster-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 3px minmax(0, 1fr) auto;
+  gap: var(--s-3);
+  align-items: center;
+  text-align: left;
+  padding: var(--s-3);
+  border-radius: var(--r-plate);
+  border: 1px solid var(--deep-line);
+  background: rgba(255, 255, 255, .03);
+  color: var(--d-text);
+  cursor: pointer;
+  min-height: 56px;
+  transition: border-color var(--d-flick) linear, background-color var(--d-flick) linear;
+}
+.cluster-row:hover { border-color: var(--gold-line); background: rgba(201, 162, 39, .09); }
+.cluster-row .leg-swatch { height: 34px; }
+.cluster-name { display: block; font-weight: 700; font-size: var(--t-body-tight); }
+.cluster-chapter { display: block; font-size: .8rem; color: var(--d-text-faint); }
+
+/* Clouds drifting over the land, during the arrival sequence only. */
+.clouds { pointer-events: none; }
+.cloud ellipse {
+  fill: rgba(226, 236, 245, .13);
+  filter: blur(6px);
+}
+.cloud-a { animation: cloud-a 22s linear both; }
+.cloud-b { animation: cloud-b 26s linear both; }
+@keyframes cloud-a {
+  0% { transform: translate(-260px, 180px); opacity: 0; }
+  22% { opacity: .9; }
+  78% { opacity: .55; }
+  100% { transform: translate(1180px, 120px); opacity: 0; }
+}
+@keyframes cloud-b {
+  0% { transform: translate(-320px, 470px); opacity: 0; }
+  26% { opacity: .7; }
+  100% { transform: translate(1160px, 520px); opacity: 0; }
+}
+
+.atlas-loading {
+  align-self: center;
+  margin: 0;
+  color: var(--gold-lit);
+  font-size: var(--t-meta);
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  animation: loading-pulse 1400ms var(--ease-out) infinite;
+}
+@keyframes loading-pulse { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }

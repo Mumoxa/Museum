@@ -1,6 +1,12 @@
 # Image provenance
 
-Every photograph in the book is a real photograph from Wikimedia Commons. Each licence was read from the Commons record (LicenseShortName, Artist and DateTimeOriginal, via the Commons API) before use. No AI-generated or reconstructed images are used. Captions, credits and licences shown in the book are taken from these records.
+This book carries two kinds of picture, and they are never mixed up in the interface.
+
+**1. Photographs of real things.** Every photograph is a real photograph from Wikimedia Commons. Each licence was read from the Commons record (LicenseShortName, Artist and DateTimeOriginal, via the Commons API) before use. Captions, credits and licences shown in the book are taken from these records. Every photograph is captioned with the photographer's name and a link to its Commons record.
+
+**2. Illustrations made for this book.** The chapter plates in `images/art/eras/` are original digital paintings made for this project. They are atmospheric illustrations, not historical records and not reconstructions of specific events: they show a typical place or scene from a period, painted in a period-appropriate palette. The book says so on the face of each one, in the caption under the plate, and in the Evidence panel, because a nine-year-old reader deserves to know the difference between a photograph and a painting. They were produced with an image-generation model from art direction written for this book; they are not photographs, not scans, and not presented as evidence for any claim.
+
+**3. Maps drawn from real data.** The atlas and the map devices are drawn in the browser with d3-geo, from Natural Earth boundary data (public domain) via the `world-atlas` package. Coastlines, borders and every site marker are projected from real longitudes and latitudes. The mountain marks are placed at the real coordinates of named ranges. The plate states this in its own caption, and the two enlarged plates (the Cape and the Highveld) exist because places in those corners are too close together to letter honestly on a single plate.
 
 | File | Shown in | Photographer (as recorded) | Licence | Commons page |
 |---|---|---|---|---|
@@ -21,8 +27,32 @@ Every photograph in the book is a real photograph from Wikimedia Commons. Each l
 
 Images are resized copies of the Commons originals, metadata stripped. The original licence terms apply to each file; see the Commons page for the full licence text.
 
+## Illustrations made for this book
+
+| File | Shown at | What it is |
+|---|---|---|
+| art/eras/era-deep-time.jpg | Ch 1 opener | Painting: a coastal cave at dusk, with rock-art figures in firelight |
+| art/eras/era-kingdoms.jpg | Ch 2 opener | Painting: a dry-stone hilltop settlement on the highveld at sunset |
+| art/eras/era-ocean.jpg | Ch 3 opener | Painting: a small sailing ship alone on a vast grey ocean |
+| art/eras/era-table-bay.jpg | Ch 4 opener | Painting: three ships entering Table Bay beneath the mountain, at dawn |
+| art/eras/era-castle.jpg | Ch 5 opener | Painting: a five-bastion stone fort on the coastal plain, late afternoon |
+| art/eras/era-island.jpg | Ch 6 opener | Painting: a low island across cold water, seen from a rocky shore |
+| art/eras/era-gold.jpg | Ch 8 opener | Painting: a mine headframe on a treeless ridge under a huge pale sky |
+| art/eras/era-struggle.jpg | Ch 10 opener | Painting: a township skyline at dusk, with lamps coming on |
+| art/eras/era-democracy.jpg | Ch 11 opener | Painting: a very long queue winding across a dry field at dawn |
+| art/eras/era-today.jpg | Ch 12 opener | Painting: a modern city beneath a flat-topped mountain at first light |
+
+Chapters 7 and 9 have no painted plate: they use their own photographs, and the atlas carries their places on the map instead.
+
+## Map data
+
+| Source | Used for | Licence |
+|---|---|---|
+| Natural Earth, via `world-atlas` (`countries-50m`, `countries-110m`) | Coastlines, borders and site positions in the atlas and the map devices | Public domain |
+| `src/data/southern-africa-50m.json` | The seven countries this book draws, extracted from the 50m set | Public domain (derived) |
+
 ## Excluded
-- Mapungubwe golden rhinoceros photo (Commons "Mapungubwe gold rhino on display gold gallery", Sian Tiley-Nel, CC BY-SA 4.0). Its description conflicts with a museum record (a replica), so it is not used.
+- Mapungubwe golden rhinoceros photo (Commons "Mapungubwe gold rhino on display gold gallery", Sian Tiley-Nel, CC BY-SA 4.0). Its description conflicts with a museum record (a replica), so it is not used, and the file was removed from the build so that nothing unverified can be served by accident.
 - Nelson Mandela's prison cell at Robben Island (CC BY 3.0 vs CC BY 1.0 conflict in Commons records).
 - Sam Nzima's 1976 photograph of Hector Pieterson: the licence could not be verified.
 - Sharpeville, Thaba Bosiu and Mandela 1990 search results: no usable verified photograph found.

@@ -61,7 +61,7 @@ export function InkMap({ note }: { note?: string }) {
       </div>
       <div className="map-wrap">
         <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-labelledby="inkmap-title inkmap-desc" className="map-svg">
-          <title id="inkmap-title">Map of {cape ? 'the Cape coast' : 'southern Africa'} with places from this chapter</title>
+          <title id="inkmap-title">{`Map of ${cape ? 'the Cape coast' : 'southern Africa'} with places from this chapter`}</title>
           <desc id="inkmap-desc">Tap or select a marker to read about the place. Shaded areas are approximate.</desc>
           <rect width={W} height={H} className="sea" />
           {countries.map((f, i) => {

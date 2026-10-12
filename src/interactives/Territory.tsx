@@ -107,7 +107,7 @@ export function Territory() {
       </div>
       <div className="map-wrap">
         <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-labelledby="terr-title" className="map-svg">
-          <title id="terr-title">Schematic map of southern Africa in {ERAS.find((e) => e.id === era)?.label}</title>
+          <title id="terr-title">{`Schematic map of southern Africa in ${ERAS.find((e) => e.id === era)?.label ?? ""}`}</title>
           <rect width={W} height={H} className="sea" />
           {world50.features.map((f, i) => {
             const id = String(f.id ?? '');
