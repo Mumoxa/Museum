@@ -6,12 +6,13 @@ export type MotionSetting = 'system' | 'reduced' | 'full';
 export interface Settings {
   motion: MotionSetting;
   sound: boolean;          // restrained page-turn and quiz sounds
-  soundVolume: number;     // 0–1
+  soundVolume: number;     // 0-1
   parentNotes: boolean;    // show "Parent notes" blocks
   voiceURI: string;        // '' = browser default
   rate: number;            // narration speed
-  simple: boolean;         // simplified reading mode
-  largeText: boolean;
+  simple: boolean;         // plain scrolling reading mode
+  scale: 'normal' | 'large';
+  lamp: 'warm' | 'cool' | 'dim';   // the temperature of the light on the page
 }
 
 export interface Progress {
@@ -26,6 +27,10 @@ export interface Progress {
   puzzles: Record<string, boolean>;      // puzzle id -> solved
   democracy: Record<string, string>;     // democracy builder placements
   questions: Record<string, string>;     // the reader's own "What would you ask?" notes, keyed by page
+  relics: string[];                      // object ids found and kept
+  visited: string[];                     // chapter ids opened on the expedition map
+  streak: number;                        // consecutive correct quiz answers
+  bestStreak: number;
 }
 
 export interface AppState {
@@ -43,7 +48,8 @@ export const DEFAULT_SETTINGS: Settings = {
   voiceURI: '',
   rate: 1,
   simple: false,
-  largeText: false,
+  scale: 'normal',
+  lamp: 'warm',
 };
 
 export const DEFAULT_PROGRESS: Progress = {
@@ -58,6 +64,10 @@ export const DEFAULT_PROGRESS: Progress = {
   puzzles: {},
   democracy: {},
   questions: {},
+  relics: [],
+  visited: [],
+  streak: 0,
+  bestStreak: 0,
 };
 
 function load(): AppState {

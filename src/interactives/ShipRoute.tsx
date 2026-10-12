@@ -80,7 +80,7 @@ export function ShipRoute() {
       </div>
       <div className="map-wrap">
         <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-labelledby="route-title" className="map-svg">
-          <title id="route-title">Map of the sea route: {r.name}</title>
+          <title id="route-title">{`Map of the sea route: ${r.name}`}</title>
           <rect width={W} height={H} className="sea" />
           {countries.map((f, i) => <path key={i} d={path(f as never) ?? ''} className="land" />)}
           <path d={linePath} className="route-line" stroke={r.color} />

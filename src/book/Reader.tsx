@@ -1,15 +1,27 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { PAGES, type Page } from '../content';
-import { SideView } from './SideView';
+import { PageView } from './PageView';
 import { useAppState, setProgress, prefersReducedMotion } from '../lib/store';
 import { pageTurn } from '../lib/sfx';
 import { award } from '../lib/achievements';
-import { on } from '../lib/bus';
+import { on, emit } from '../lib/bus';
+import { ERA_BY_ID, eraVars } from '../design/era';
+import { eraPlateSrc } from '../design/relics';
 
-export const TURN_MS = 720;
-const WIDE_QUERY = '(min-width: 900px) and (min-height: 560px)';
+/* ============================================================================
+   THE READER
+   ----------------------------------------------------------------------------
+   A book that behaves like a book. On a phone it is one page with a lift-and-
+   slide turn you can drag. On a wide screen it is a true two-page spread with
+   a leaf that follows your finger in 3D and casts a moving shade across the
+   paper. Keyboard, buttons, corner taps and swipes all reach the same
+   controller, and the controller is published on the event bus so the HUD can
+   drive it too.
+   ========================================================================= */
 
-/** True when the book shows two pages side by side. */
+export const TURN_MS = 760;
+const WIDE_QUERY = '(min-width: 940px) and (min-height: 600px)';
+
 export function useWide(): boolean {
   const [wide, setWide] = useState(() => typeof window !== 'undefined' && window.matchMedia(WIDE_QUERY).matches);
   useEffect(() => {
@@ -21,25 +33,29 @@ export function useWide(): boolean {
   return wide;
 }
 
-/** The right-hand page index of the spread that contains `page`. Right pages are even. */
+/** The right-hand page index of the spread containing `page`. */
 export function spreadRight(page: number): number {
   return page - (page % 2);
 }
 
-/** Pages visible on screen for the given page state. */
 export function visibleIndices(page: number, wide: boolean): number[] {
   if (!wide) return [page];
   const r = spreadRight(page);
   return [r - 1, r].filter((i) => i >= 0 && i < PAGES.length);
 }
 
-function nextReadable(from: number, dir: 1 | -1): number | null {
+export function nextReadable(from: number, dir: 1 | -1): number | null {
   let i = from + dir;
   while (i >= 0 && i < PAGES.length) {
     if (!PAGES[i].blank) return i;
     i += dir;
   }
   return null;
+}
+
+/** Asks the reader to turn. Used by the HUD rail and the keyboard. */
+export function requestTurn(dir: 1 | -1) {
+  emit('turn', dir);
 }
 
 interface Turn {
@@ -49,7 +65,7 @@ interface Turn {
   settling: boolean;
 }
 
-export function Book({ highlight, onTurnKey }: { highlight: string | null; onTurnKey?: () => void }) {
+export function Reader({ highlight }: { highlight: string | null }) {
   const page = useAppState((s) => s.progress.page);
   const motion = useAppState((s) => s.settings.motion);
   const sound = useAppState((s) => s.settings.sound);
@@ -58,13 +74,13 @@ export function Book({ highlight, onTurnKey }: { highlight: string | null; onTur
   const reduced = prefersReducedMotion(motion);
   const R = wide ? spreadRight(page) : page;
   const [turn, setTurn] = useState<Turn | null>(null);
+  const [lastDir, setLastDir] = useState<1 | -1>(1);
   const turnRef = useRef<Turn | null>(null);
   turnRef.current = turn;
-  const bookRef = useRef<HTMLDivElement | null>(null);
+  const stageRef = useRef<HTMLDivElement | null>(null);
   const drag = useRef<{ x0: number; y0: number; dir: 1 | -1; active: boolean; width: number } | null>(null);
   const focusAfter = useRef(false);
 
-  // Commit a finished turn: update the saved page and play the optional sound.
   function commit(target: number) {
     setTurn(null);
     setProgress((p) => ({
@@ -76,7 +92,6 @@ export function Book({ highlight, onTurnKey }: { highlight: string | null; onTur
     focusAfter.current = true;
   }
 
-  // Spread-mode turns. In single-page mode, changes are immediate and animated by CSS instead.
   function canTurn(dir: 1 | -1): number | null {
     const target = dir === 1 ? R + 2 : R - 2;
     if (target < 0 || target >= PAGES.length) return null;
@@ -89,16 +104,15 @@ export function Book({ highlight, onTurnKey }: { highlight: string | null; onTur
       const t = nextReadable(page, dir);
       if (t === null) return;
       if (reduced) { setProgress({ page: t }); return; }
+      setLastDir(dir);
       setProgress((p) => ({ page: t, seen: [...p.seen, t].slice(-400) }));
       if (sound) pageTurn(volume);
       award('first-turn');
       focusAfter.current = true;
-      onTurnKey?.();
       return;
     }
     const target = canTurn(dir);
     if (target === null) return;
-    onTurnKey?.();
     if (reduced) { commit(target); return; }
     setTurn({ dir, target, p: 0, settling: false });
     requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -106,7 +120,6 @@ export function Book({ highlight, onTurnKey }: { highlight: string | null; onTur
     }));
   }
 
-  // When a turn settles, wait for the CSS transition to finish, then commit or cancel.
   useEffect(() => {
     if (!turn || !turn.settling) return;
     const id = window.setTimeout(() => {
@@ -119,7 +132,7 @@ export function Book({ highlight, onTurnKey }: { highlight: string | null; onTur
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [turn?.settling, turn?.target]);
 
-  // Keyboard: arrows and page keys, unless the reader is typing.
+  /* Keyboard. Arrows, page keys and space all turn. */
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const el = e.target as HTMLElement | null;
@@ -133,27 +146,29 @@ export function Book({ highlight, onTurnKey }: { highlight: string | null; onTur
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, R, wide, reduced, sound, volume]);
 
-  // Jumps from the contents, timeline and other panels.
+  /* Turns asked for from anywhere else in the app. */
+  useEffect(() => on('turn', (dir: 1 | -1) => startTurn(dir)), [page, R, wide, reduced, sound, volume]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Jumps from the atlas, the contents and the timeline. */
   useEffect(() => on('goto', (index: number) => {
     setTurn(null);
     setProgress({ page: wide ? spreadRight(index) : index });
     focusAfter.current = true;
   }), [wide]);
 
-  // Move focus to the new page heading after keyboard or button navigation.
   useEffect(() => {
     if (!focusAfter.current) return;
     focusAfter.current = false;
-    const el = bookRef.current?.querySelector<HTMLElement>('[data-page] [data-focus-title]');
+    const el = stageRef.current?.querySelector<HTMLElement>('[data-page] [data-focus-title]');
     el?.focus({ preventScroll: true });
   }, [R, page]);
 
-  // Pointer: drag a page to turn it, or tap the bottom outer corners.
+  /* Pointer: drag a leaf on a wide screen; swipe anywhere on a phone. */
   function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
-    if (turnRef.current || !bookRef.current) return;
+    if (turnRef.current || !stageRef.current) return;
     const t = e.target as HTMLElement;
-    if (t.closest('button, a, input, textarea, select, label, details, summary, [role="tab"]')) return;
-    const rect = bookRef.current.getBoundingClientRect();
+    if (t.closest('button, a, input, textarea, select, label, details, summary, [role="tab"], svg')) return;
+    const rect = stageRef.current.getBoundingClientRect();
     const half = rect.left + rect.width / 2;
     const dir: 1 | -1 = e.clientX > half ? 1 : -1;
     drag.current = { x0: e.clientX, y0: e.clientY, dir, active: false, width: wide ? rect.width / 2 : rect.width };
@@ -161,43 +176,39 @@ export function Book({ highlight, onTurnKey }: { highlight: string | null; onTur
 
   function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
     const d = drag.current;
-    if (!d || !wide) return;   // single-page swipes are judged on release
+    if (!d || !wide) return;
     const dx = e.clientX - d.x0;
     const dy = e.clientY - d.y0;
     if (!d.active) {
-      if (Math.abs(dx) < 10 || Math.abs(dy) > Math.abs(dx)) return;
+      if (Math.abs(dx) < 12 || Math.abs(dy) > Math.abs(dx)) return;
       const target = canTurn(d.dir);
       if (target === null || turnRef.current) { drag.current = null; return; }
       d.active = true;
-      onTurnKey?.();
       setTurn({ dir: d.dir, target, p: 0, settling: false });
     }
     const raw = d.dir === 1 ? -dx / d.width : dx / d.width;
-    const p = Math.max(0, Math.min(1, raw));
-    setTurn((t) => (t ? { ...t, p } : t));
+    setTurn((t) => (t ? { ...t, p: Math.max(0, Math.min(1, raw)) } : t));
   }
 
   function onPointerUp(e: React.PointerEvent<HTMLDivElement>) {
     const d = drag.current;
     drag.current = null;
-    if (!d || !bookRef.current) return;
+    if (!d || !stageRef.current) return;
     if (!wide) {
-      // Single page: a horizontal swipe of at least 50px turns the page.
       const dx = e.clientX - d.x0;
       const dy = e.clientY - d.y0;
-      if (Math.abs(dx) >= 50 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+      if (Math.abs(dx) >= 46 && Math.abs(dx) > Math.abs(dy) * 1.2) {
         startTurn(dx < 0 ? 1 : -1);
-        return;
       }
+      return;
     }
     if (!d.active) {
-      // A tap: turn only from the bottom outer corners.
-      const rect = bookRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const inBottom = y > rect.height * 0.8;
-      if (inBottom && x > rect.width * 0.86) startTurn(1);
-      else if (inBottom && x < rect.width * 0.14) startTurn(-1);
+      /* A tap on the outer third of a page turns it, like a real book
+         corner. The middle third stays free for reading and tapping. */
+      const rect = stageRef.current.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width;
+      if (x > 0.86) startTurn(1);
+      else if (x < 0.14) startTurn(-1);
       return;
     }
     const t = turnRef.current;
@@ -205,7 +216,6 @@ export function Book({ highlight, onTurnKey }: { highlight: string | null; onTur
     setTurn({ ...t, p: t.p > 0.5 ? 1 : 0, settling: true });
   }
 
-  const hasLeft = R - 1 >= 0;
   const turning = wide && turn !== null;
   const leftStatic = turning ? (turn!.dir === 1 ? R - 1 : R - 3) : R - 1;
   const rightStatic = turning ? (turn!.dir === 1 ? R + 2 : R) : R;
@@ -213,91 +223,104 @@ export function Book({ highlight, onTurnKey }: { highlight: string | null; onTur
   const leafBack = turning ? (turn!.dir === 1 ? R + 1 : R - 2) : -1;
   const p = turn?.p ?? 0;
   const dir = turn?.dir ?? 1;
-  const transition = turn?.settling && !reduced ? `transform ${TURN_MS}ms cubic-bezier(.22,.7,.18,1)` : 'none';
-  const shade = Math.sin(Math.PI * p) * 0.55;
+  const transition = turn?.settling && !reduced ? `transform ${TURN_MS}ms cubic-bezier(.44,.05,.2,1)` : 'none';
+  const shade = Math.sin(Math.PI * p) * 0.5;
 
-  const pageClass = wide ? 'book spread' : 'book single';
-  const singleKey = `${page}`;
-  const single = page >= 0 && page < PAGES.length ? page : 0;
+  const current = PAGES[page];
+  const chapterId = current?.chapter || 'prologue';
+  const era = ERA_BY_ID[chapterId];
+  const plateSrc = eraPlateSrc(chapterId);
+  const [enterKey, setEnterKey] = useState(0);
+  useEffect(() => { setEnterKey((k) => k + 1); }, [page]);
 
   return (
     <div
-      ref={bookRef}
-      className={`${pageClass} ${reduced ? 'no-anim' : ''}`}
+      ref={stageRef}
+      className={`stage${reduced ? ' no-anim' : ''}`}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={() => { drag.current = null; if (turnRef.current && !turnRef.current.settling) setTurn(null); }}
+      style={eraVars(chapterId) as CSSProperties}
     >
-      <div className="book-board" aria-hidden="false">
+      {plateSrc && (
+        <div className="plate-backdrop" aria-hidden="true" key={chapterId}>
+          <img src={plateSrc} alt="" />
+        </div>
+      )}
+
+      <div className={`sheet ${wide ? 'wide' : 'single'}`}>
         {wide ? (
           <>
-            <div className="sheet left-sheet">
-              <PageFace index={leftStatic} face="left" highlight={highlight} endpaper={leftStatic < 0} />
+            <div className="pane pane-left">
+              <PaneFace index={leftStatic} face="left" highlight={highlight} />
             </div>
-            <div className="sheet right-sheet">
-              <PageFace index={rightStatic} face="right" highlight={highlight} />
+            <div className="pane pane-right">
+              <PaneFace index={rightStatic} face="right" highlight={highlight} />
             </div>
-            <div className="spine" aria-hidden="true" />
             {turning && (
               <div
                 className={`leaf ${dir === 1 ? 'to-left' : 'to-right'}`}
-                style={{
-                  transform: `rotateY(${dir === 1 ? -180 * p : 180 * p}deg)`,
-                  transition,
-                }}
+                style={{ transform: `rotateY(${dir === 1 ? -180 * p : 180 * p}deg)`, transition }}
                 aria-hidden="true"
               >
-                <div className="face front">
-                  <PageFace index={leafFront} face={dir === 1 ? 'right' : 'left'} highlight={null} endpaper={leafFront < 0} />
+                <div className="leaf-face leaf-front">
+                  <PaneFace index={leafFront} face={dir === 1 ? 'right' : 'left'} highlight={null} />
                 </div>
-                <div className="face back">
-                  <PageFace index={leafBack} face={dir === 1 ? 'left' : 'right'} highlight={null} endpaper={leafBack < 0} />
+                <div className="leaf-face leaf-back">
+                  <PaneFace index={leafBack} face={dir === 1 ? 'left' : 'right'} highlight={null} />
                 </div>
-                <div className="turn-shade" style={{ opacity: shade }} />
+                <div className="leaf-shade" style={{ opacity: shade }} />
               </div>
             )}
           </>
         ) : (
-          <div className="sheet single-sheet" key={singleKey} data-anim={reduced ? 'none' : 'slide'}>
-            <PageFace index={single} face="single" highlight={highlight} />
+          <div
+            className="pane pane-single"
+            key={enterKey}
+            data-enter={reduced ? '0' : 'turn'}
+            style={{ ['--turn-from' as string]: lastDir === -1 ? '-22px' : '22px' }}
+          >
+            <PaneFace index={page} face="single" highlight={highlight} />
           </div>
         )}
       </div>
-      <div className="corner-hint left" aria-hidden="true" />
-      <div className="corner-hint right" aria-hidden="true" />
+
+      {/* Corner affordances: real buttons in the outer thirds, so the tap
+          target is explicit and a screen reader can reach it. */}
+      {!wide && (
+        <>
+          <button type="button" className="corner corner-prev" onClick={() => startTurn(-1)} aria-label="Previous page">
+            <span aria-hidden="true" />
+          </button>
+          <button type="button" className="corner corner-next" onClick={() => startTurn(1)} aria-label="Next page">
+            <span aria-hidden="true" />
+          </button>
+        </>
+      )}
+
       <div className="sr-only" aria-live="polite">
         {wide
-          ? `Pages ${R} and ${R + 1 < PAGES.length ? R + 1 : R}`
+          ? `Showing pages ${Math.max(1, leftStatic)} and ${Math.max(1, rightStatic)}`
           : PAGES[page]?.side.title ? `Page: ${PAGES[page].side.title}` : 'Page'}
-      </div>
-      <div className="book-nav" role="group" aria-label="Turn pages">
-        <button type="button" className="nav-btn" onClick={() => startTurn(-1)} disabled={wide ? !hasLeft && R - 2 < 0 : nextReadable(page, -1) === null}>
-          <span aria-hidden="true">←</span> Previous {wide ? 'spread' : 'page'}
-        </button>
-        <button type="button" className="nav-btn primary" onClick={() => startTurn(1)} disabled={wide ? R + 2 >= PAGES.length : nextReadable(page, 1) === null}>
-          Next {wide ? 'spread' : 'page'} <span aria-hidden="true">→</span>
-        </button>
       </div>
     </div>
   );
 }
 
-function PageFace({ index, face, highlight, endpaper }: { index: number; face: 'left' | 'right' | 'single'; highlight: string | null; endpaper?: boolean }) {
+function PaneFace({ index, face, highlight }: { index: number; face: 'left' | 'right' | 'single'; highlight: string | null }) {
   const page: Page | undefined = PAGES[index];
   if (!page || page.blank) {
-    return <div className={`paper blank ${endpaper ? 'endpaper' : ''} face-${face}`} aria-hidden="true" />;
+    return <div className={`page blank-page face-${face}`} aria-hidden="true" />;
   }
   return (
-    <div className={`paper face-${face} ${page.chapter ? `ch-${page.chapter}` : ''}`} data-page={index}>
-      <SideView
-        index={index}
-        side={page.side}
-        chapterId={page.chapter}
-        highlight={highlight}
-        face={face}
-        pageNumber={page.pageNo}
-      />
-    </div>
+    <PageView
+      index={index}
+      side={page.side}
+      chapterId={page.chapter}
+      highlight={highlight}
+      face={face}
+      pageNumber={page.pageNo}
+    />
   );
 }

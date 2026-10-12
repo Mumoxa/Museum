@@ -1,0 +1,725 @@
+/* ============================================================================
+   THE READING SURFACE
+   The page is the only lit object in the room. Everything here is typography,
+   rule-work and paper: no cards, no rounded boxes, no gradients-as-decoration.
+   ========================================================================= */
+
+.stage {
+  position: relative;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
+  padding: 0 clamp(var(--s-2), 2.6vw, var(--s-6));
+  padding-bottom: calc(var(--s-8) + env(safe-area-inset-bottom));
+  z-index: var(--z-page);
+}
+@media (min-width: 900px) {
+  .stage { padding-bottom: calc(var(--s-7) + env(safe-area-inset-bottom)); }
+}
+
+/* The chapter plate sits behind the page and bleeds off both edges: the
+   reader can see the world she is inside, but the page always wins for
+   contrast. This is the "distinct visual identity per period" requirement. */
+.plate-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: .5;
+  transition: opacity var(--d-scene) var(--ease-out);
+}
+.plate-backdrop img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  filter: saturate(.72) contrast(1.02);
+}
+.plate-backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(90% 70% at 50% 46%, rgba(8, 11, 16, .35) 0%, rgba(7, 10, 15, .88) 62%, rgba(6, 8, 12, 1) 100%);
+}
+
+/* -- Sheet: one page on a phone, two on a wide screen ---------------------- */
+.sheet {
+  position: relative;
+  margin: 0 auto;
+  display: grid;
+  min-height: 0;
+  width: 100%;
+}
+.sheet.wide { grid-template-columns: 1fr 1fr; max-width: 1240px; gap: 2px; }
+.sheet.single { max-width: 700px; }
+
+.pane {
+  position: relative;
+  min-height: 0;
+  background: var(--vellum);
+  color: var(--ink);
+  box-shadow: var(--lift-page);
+  overflow: hidden;
+  border-radius: var(--r-plate);
+}
+/* Paper fibre, drawn once and never animated. */
+.pane::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(0deg, rgba(120, 104, 62, .035) 0 1px, transparent 1px 4px),
+    radial-gradient(120% 90% at 50% 0%, var(--lamp-pool) 0%, var(--vellum) 42%, var(--lamp-edge) 118%);
+  opacity: .96;
+}
+.pane-single { border-radius: var(--r-plate); }
+.sheet.wide .pane-left { border-radius: var(--r-plate) 0 0 var(--r-plate); }
+.sheet.wide .pane-right { border-radius: 0 var(--r-plate) var(--r-plate) 0; }
+/* Gutter shading only where a real gutter exists. */
+.sheet.wide .pane-left::after,
+.sheet.wide .pane-right::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 34px;
+  pointer-events: none;
+  z-index: 2;
+}
+.sheet.wide .pane-left::after { right: 0; background: linear-gradient(90deg, transparent, rgba(74, 62, 34, .16)); }
+.sheet.wide .pane-right::after { left: 0; background: linear-gradient(270deg, transparent, rgba(74, 62, 34, .16)); }
+
+/* Sheets arrive with a short lift; page turns are handled by the leaf. */
+/* Horizontal swipes belong to the reader, vertical ones to the page. Without
+   this the browser claims a sideways drag as a scroll gesture and the page
+   never turns on a phone, which is how this was found: in a real browser, by
+   swiping at it. */
+.stage, .sheet, .pane, .page { touch-action: pan-y; }
+/* A drag that starts on a picture must still turn the page: without this
+   Chrome starts a native image drag and cancels the gesture. */
+.sheet img, .plate-backdrop img { -webkit-user-drag: none; user-select: none; }
+
+.sheet[data-enter='1'] { animation: sheet-enter var(--d-rise) var(--ease-out) both; }
+@keyframes sheet-enter {
+  from { opacity: 0; transform: translateY(10px) scale(.995); }
+  to { opacity: 1; transform: none; }
+}
+.sheet[data-enter='turn'] { animation: sheet-turn var(--d-scene) var(--ease-page) both; }
+@keyframes sheet-turn {
+  from { opacity: .15; transform: translateX(var(--turn-from, 22px)); }
+  to { opacity: 1; transform: none; }
+}
+
+/* -- Page: the scrollable reading column ---------------------------------- */
+.page {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: clamp(20px, 4.4vw, 40px) clamp(18px, 4.6vw, 46px) clamp(28px, 6vw, 52px);
+  scroll-behavior: smooth;
+}
+.page > * { max-width: 66ch; }
+.page .bleed { max-width: none; }
+
+/* -- Running head ---------------------------------------------------------- */
+.running {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding-bottom: var(--s-2);
+  margin-bottom: var(--s-5);
+  border-bottom: 1px solid var(--rule-soft);
+  font-size: var(--t-meta);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.running .folio { font-variant-numeric: tabular-nums; color: var(--ink-soft); }
+.running-era {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-weight: 700;
+  color: var(--era-mid, var(--ink-soft));
+}
+.running-swatch { width: 8px; height: 8px; border-radius: var(--r-seal); background: var(--era-glow, var(--gold)); display: block; }
+.running-title { display: none; }
+.running-title::before { content: '  '; }
+@media (min-width: 720px) { .running-title { display: inline; } }
+
+/* -- Titles ---------------------------------------------------------------- */
+.page-title {
+  font-size: clamp(1.72rem, 1.2rem + 2.2vw, 2.6rem);
+  line-height: 1.02;
+  color: var(--ink);
+  margin: 0 0 var(--s-2);
+}
+.page-title.opener-title {
+  font-size: clamp(2.05rem, 1.3rem + 3.6vw, 3.4rem);
+  line-height: .98;
+}
+.page-kicker {
+  font-family: var(--f-body);
+  font-size: var(--t-meta);
+  font-weight: 700;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--era-mid, var(--gold-ink));
+  margin: 0 0 var(--s-3);
+}
+/* Opener rule: a short gilt bar over a hairline. */
+.page-title::after {
+  content: '';
+  display: block;
+  width: 68px;
+  height: 2px;
+  margin-top: var(--s-4);
+  background: linear-gradient(90deg, var(--era-glow, var(--gold)), var(--gold), transparent);
+}
+
+.subhead {
+  font-size: var(--t-h3);
+  color: var(--ink);
+  margin: var(--s-6) 0 var(--s-2);
+  font-family: var(--f-display);
+}
+.subhead:first-child { margin-top: 0; }
+
+/* -- Body copy ------------------------------------------------------------- */
+.page p { margin: 0 0 var(--s-4); }
+.page .lead {
+  font-family: var(--f-display);
+  font-size: var(--t-lead);
+  line-height: 1.32;
+  font-style: italic;
+  color: color-mix(in srgb, var(--era-deep) 55%, var(--ink));
+  padding-bottom: .06em;
+  margin-bottom: var(--s-5);
+}
+.page .lead::first-letter {
+  font-family: var(--f-display);
+  font-size: 3.1em;
+  line-height: .78;
+  float: left;
+  padding: .06em .1em 0 0;
+  color: var(--era-mid, var(--gold-ink));
+  font-style: normal;
+  font-weight: 700;
+}
+.page .note {
+  border-left: 3px solid var(--era-mid, var(--gold-line));
+  padding: var(--s-1) 0 var(--s-1) var(--s-4);
+  color: var(--ink-soft);
+}
+.sentence.speaking {
+  background: color-mix(in srgb, var(--gold) 34%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 24%, transparent);
+  border-radius: var(--r-edge);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  color: #14100a;
+}
+
+/* -- Glossary terms: gilt-dotted, unmistakably tappable -------------------- */
+.term {
+  display: inline;
+  background: none;
+  border: 0;
+  /* A glossary word sits inside a sentence, so it grows its tap area with
+     padding and gives the space back with a matching negative margin. The
+     line box is untouched; a thumb gets 44px to land on. */
+  padding: 8px 4px;
+  margin: -8px -4px;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border-bottom: 2px dotted var(--era-mid, var(--gold-ink));
+  transition: background-color var(--d-flick) linear;
+}
+.term:hover, .term:focus-visible { background: var(--gold-wash); }
+
+/* -- The anchor: when and where. A dateline, not a chip row. --------------- */
+.anchor {
+  display: grid;
+  gap: var(--s-1);
+  margin: var(--s-5) 0;
+  padding: var(--s-3) 0;
+  border-top: 1px solid var(--rule-soft);
+  border-bottom: 1px solid var(--rule-soft);
+  font-size: var(--t-body-tight);
+}
+.anchor-when,
+.anchor-where { display: flex; gap: var(--s-3); align-items: baseline; }
+.anchor .label { flex: none; width: 4.4rem; color: var(--era-mid, var(--gold-ink)); }
+
+/* ============================================================================
+   THE NIGHT BLOCKS
+   "Did you know", "What would you ask", "Question for Mum or Dad" and the
+   mystery are dark plates set INTO the page, like a museum text panel lit
+   from within. This is the strongest structural break on any page and it is
+   why the pages never read as a stack of cards.
+   ========================================================================= */
+
+.night {
+  position: relative;
+  margin: var(--s-6) 0;
+  padding: var(--s-5) var(--s-5) var(--s-5);
+  border-radius: var(--r-plate);
+  background:
+    radial-gradient(120% 80% at 12% 0%, color-mix(in srgb, var(--era-mid, #8a6a2b) 26%, transparent), transparent 62%),
+    linear-gradient(178deg, var(--deep-2), var(--deep));
+  color: var(--d-text);
+  box-shadow: var(--lift-3), inset 0 1px 0 rgba(255, 255, 255, .06);
+  overflow: hidden;
+}
+.night::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--era-glow, var(--gold-lit)), var(--era-mid, var(--gold)), transparent);
+}
+.night .night-label {
+  font-family: var(--f-body);
+  font-size: var(--t-meta-wide);
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--era-glow, var(--gold-lit));
+  margin: 0 0 var(--s-3);
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.night p { color: #e4e2da; margin: 0 0 var(--s-3); }
+.night .night-question {
+  font-family: var(--f-display);
+  font-style: italic;
+  font-size: 1.28rem;
+  line-height: 1.32;
+  color: #f2ecd9;
+  padding-bottom: .06em;
+}
+.night-fact { --era-glow: var(--gold-lit); }
+
+/* The compass-rose watermark behind the mystery block. */
+.night-mystery { text-align: left; }
+.night-mystery .night-question { font-size: 1.42rem; }
+
+/* -- Tell me more: a real disclosure, styled as a drawer ------------------- */
+.tellmore { margin: var(--s-6) 0 0; border-top: 1px solid var(--rule-soft); }
+.tm { border-bottom: 1px solid var(--rule-soft); }
+.tm > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3) 0;
+  font-weight: 700;
+  color: var(--ink);
+  font-size: var(--t-body-tight);
+  transition: color var(--d-flick) linear;
+}
+.tm > summary::-webkit-details-marker { display: none; }
+.tm > summary::before {
+  content: '';
+  flex: none;
+  width: 22px; height: 22px;
+  border-radius: var(--r-seal);
+  border: 1px solid var(--rule);
+  background:
+    linear-gradient(currentColor, currentColor) center / 9px 1.5px no-repeat,
+    linear-gradient(currentColor, currentColor) center / 1.5px 9px no-repeat;
+  color: var(--gold-ink);
+  transition: transform var(--d-shift) var(--ease-out), background-size var(--d-shift) var(--ease-out);
+}
+.tm[open] > summary::before { transform: rotate(45deg); }
+.tm > summary:hover { color: var(--gold-deep); }
+.tm > summary:focus-visible { outline: 3px solid var(--gold-deep); outline-offset: 2px; }
+.tm-body { padding: 0 0 var(--s-4) 34px; animation: tm-open var(--d-rise) var(--ease-out) both; }
+@keyframes tm-open { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; } }
+.tm-body p { margin: 0; color: var(--ink-soft); }
+
+/* ============================================================================
+   FIGURES - real photographs, printed on the page like plates
+   ========================================================================= */
+.fig {
+  margin: var(--s-6) 0;
+  padding: 0;
+  position: relative;
+}
+.fig .fig-frame {
+  position: relative;
+  border-radius: var(--r-plate);
+  overflow: hidden;
+  background: #1b1f26;
+  box-shadow: 0 0 0 1px var(--rule), var(--lift-2);
+}
+.fig img {
+  width: 100%;
+  height: auto;
+  max-height: 44vh;
+  object-fit: cover;
+  filter: saturate(.94) contrast(1.02);
+}
+/* A mounted print: the photographic plate sits inside a paper margin. */
+.fig.wide img { max-height: 52vh; }
+.fig figcaption {
+  display: grid;
+  gap: var(--s-1);
+  margin-top: var(--s-3);
+  font-size: var(--t-body-tight);
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+.fig .cap-text { color: var(--ink-soft); }
+.fig .credit {
+  font-size: .8rem;
+  color: var(--ink-faint);
+  line-height: 1.4;
+}
+.fig .credit a { color: var(--ink-faint); text-decoration: underline dotted; }
+.fig .credit a:hover { color: var(--link); }
+
+/* ============================================================================
+   RELICS - the objects you can find on a page
+   A relic is a small gold find-point. It expands into a caption BELOW the
+   image, never as a pill floating over the photograph (skill 9.F).
+   ========================================================================= */
+
+.relic-anchor {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+.relic-find {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 44px; height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  z-index: 3;
+}
+.relic-find span {
+  display: grid;
+  place-items: center;
+  width: 20px; height: 20px;
+  border-radius: var(--r-seal);
+  background: radial-gradient(circle at 34% 30%, #fff3c8, var(--gold) 62%, #8a6c14);
+  box-shadow: 0 0 0 2px rgba(12, 15, 20, .72), 0 0 18px rgba(233, 200, 92, .55);
+  transition: transform var(--d-shift) var(--ease-lift), box-shadow var(--d-shift) linear;
+}
+.relic-find::after {
+  content: '';
+  position: absolute;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(233, 200, 92, .85);
+  animation: relic-pulse 2600ms var(--ease-out) infinite;
+}
+@keyframes relic-pulse {
+  0%, 100% { transform: scale(1); opacity: .8; }
+  55% { transform: scale(2.1); opacity: 0; }
+}
+.relic-find:hover span, .relic-find:focus-visible span { transform: scale(1.28); }
+.relic-find:focus-visible { outline: 3px solid var(--gold-lit); outline-offset: 1px; border-radius: var(--r-seal); }
+.relic-find.is-found span {
+  background: radial-gradient(circle at 34% 30%, #dff6e6, var(--verify) 66%, #1c4530);
+  box-shadow: 0 0 0 2px rgba(12, 15, 20, .72);
+}
+.relic-find.is-found::after { display: none; }
+
+/* The revealed relic: a specimen label, printed under the plate. */
+.relic-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--s-4);
+  align-items: start;
+  margin-top: var(--s-3);
+  padding: var(--s-4);
+  border-radius: var(--r-plate);
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--gold);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .5), rgba(180, 168, 132, .16));
+  animation: relic-in var(--d-rise) var(--ease-out) both;
+}
+@keyframes relic-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; } }
+.relic-stamp {
+  display: grid;
+  place-items: center;
+  width: 46px; height: 46px;
+  border-radius: var(--r-seal);
+  border: 1.5px solid var(--gold-line);
+  color: var(--gold-ink);
+  background: rgba(255, 255, 255, .6);
+  flex: none;
+}
+.relic-card h4 {
+  font-size: 1.12rem;
+  margin: 0 0 var(--s-1);
+  color: var(--ink);
+}
+.relic-card p { margin: 0 0 var(--s-2); font-size: var(--t-body-tight); color: var(--ink-soft); }
+.relic-card .relic-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--t-meta-wide);
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--gold-ink);
+}
+.relic-card .relic-tag[data-found='1'] { color: var(--verify); }
+
+/* ============================================================================
+   THE PAGE FOOT - real actions, inked, not floating
+   ========================================================================= */
+.pagefoot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin-top: var(--s-7);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--rule-soft);
+}
+/* The page foot carries the two or three things a reader taps on a page, so
+   these hold the 44px floor like every other control. */
+.pagefoot .tag { min-height: 44px; }
+.on-paper .tag {
+  background: rgba(255, 255, 255, .55);
+  border-color: var(--rule);
+  color: var(--ink-soft);
+}
+.on-paper .tag:hover { color: var(--gold-deep); border-color: var(--gold-line); background: rgba(255, 255, 255, .85); }
+.on-paper .tag[aria-pressed='true'] { background: var(--gold-wash); color: var(--gold-deep); border-color: var(--gold-line); }
+
+/* -- The margin note for a grown-up ---------------------------------------- */
+.on-paper aside.parent {
+  border: 1px dashed var(--rule);
+  border-radius: var(--r-plate);
+  padding: var(--s-4);
+  margin: var(--s-5) 0;
+  background: rgba(255, 255, 255, .38);
+}
+.on-paper aside.parent .parent-label { color: var(--ink-soft); font-size: var(--t-meta); letter-spacing: .16em; text-transform: uppercase; font-family: var(--f-body); font-weight: 700; margin: 0 0 var(--s-2); }
+
+/* ============================================================================
+   THE CONTENTS PAGE
+   ========================================================================= */
+.toc-page { list-style: none; padding: 0; margin: 0; display: grid; gap: 0; }
+.toc-page li { border-bottom: 1px solid var(--rule-soft); }
+.toc-btn {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 3.6rem minmax(0, 1fr);
+  gap: var(--s-4);
+  align-items: baseline;
+  text-align: left;
+  padding: var(--s-4) var(--s-1);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--ink);
+  transition: color var(--d-flick) linear, padding-left var(--d-shift) var(--ease-out);
+}
+.toc-btn:hover { color: var(--gold-deep); padding-left: var(--s-3); }
+.toc-page .toc-num {
+  font-family: var(--f-display);
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: .9;
+  color: var(--gold-ink);
+}
+.toc-page .toc-title { font-family: var(--f-display); font-size: 1.28rem; line-height: 1.15; display: block; }
+.toc-mood { display: block; font-family: var(--f-body); font-size: .85rem; color: var(--ink-faint); margin-top: 2px; }
+
+/* ============================================================================
+   PLAIN READING MODE - one scrolling column, no theatre
+   ========================================================================= */
+.plain {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--s-6) clamp(var(--s-4), 4vw, var(--s-7)) var(--s-9);
+  background: var(--vellum);
+  color: var(--ink);
+  border-radius: var(--r-plate);
+  box-shadow: var(--lift-page);
+}
+.plain-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--s-4);
+  margin-bottom: var(--s-5);
+  border-bottom: 1px solid var(--rule-soft);
+}
+.plain-title { font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.2rem); }
+.plain-turns { display: flex; gap: var(--s-3); flex-wrap: wrap; }
+
+/* The chapter picker: a ruled list of chapters, opened from the running head. */
+.picker { flex: 1 1 100%; border: 1px solid var(--rule); border-radius: var(--r-plate); background: rgba(255, 255, 255, .5); }
+.picker > summary {
+  list-style: none;
+  cursor: pointer;
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--s-3);
+  align-items: center;
+  padding: var(--s-2) var(--s-3);
+}
+.picker > summary::-webkit-details-marker { display: none; }
+.picker-where { font-size: var(--t-meta); font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--gold-ink); }
+.picker-now { font-family: var(--f-display); font-size: 1.1rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.picker-caret { color: var(--ink-faint); transition: transform var(--d-shift) var(--ease-out); }
+.picker[open] .picker-caret { transform: rotate(180deg); }
+.picker-list { list-style: none; margin: 0; padding: 0; max-height: 46dvh; overflow-y: auto; border-top: 1px solid var(--rule-soft); }
+.picker-list li { border-bottom: 1px solid var(--rule-soft); }
+.picker-list li:last-child { border-bottom: 0; }
+.picker-row {
+  width: 100%;
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: 2.6rem minmax(0, 1fr);
+  gap: var(--s-3);
+  align-items: center;
+  text-align: left;
+  padding: var(--s-2) var(--s-3);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--ink-soft);
+  font-family: var(--f-body);
+  font-size: .98rem;
+}
+.picker-row:hover { color: var(--gold-deep); background: rgba(255, 255, 255, .6); }
+.picker-row.is-here { color: var(--ink); font-weight: 700; }
+.picker-num { font-family: var(--f-display); font-size: 1.05rem; font-weight: 700; color: var(--gold-ink); }
+.picker-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plain-section { padding: var(--s-5) 0; border-bottom: 1px dashed var(--rule-soft); }
+.plain-section:last-child { border-bottom: 0; }
+.plain .running { border-bottom: 0; margin-bottom: var(--s-2); padding-bottom: 0; }
+
+/* ============================================================================
+   MOTION OFF
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  .relic-find::after, .site.is-here .site-halo { animation: none !important; }
+  .ridges path, .ridge-solo, .sites .site { animation: none !important; }
+  .relic-card, .tm-body, .sheet[data-enter] { animation: none !important; }
+}
+.reduce-motion .relic-find::after { animation: none !important; }
+.reduce-motion .ridges path, .reduce-motion .ridge-solo, .reduce-motion .sites .site { animation: none !important; }
+
+/* ============================================================================
+   THE LEAF - the turn itself
+   ========================================================================= */
+.leaf {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  z-index: var(--z-leaf);
+  transform-style: preserve-3d;
+  will-change: transform;
+  pointer-events: none;
+}
+.leaf.to-left { left: 50%; transform-origin: left center; }
+.leaf.to-right { left: 0; transform-origin: right center; }
+.leaf-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow: hidden;
+  background: var(--vellum);
+  box-shadow: var(--lift-page);
+}
+.leaf.to-left .leaf-face { border-radius: 0 var(--r-plate) var(--r-plate) 0; }
+.leaf.to-right .leaf-face { border-radius: var(--r-plate) 0 0 var(--r-plate); }
+.leaf-front { transform: rotateY(0deg); }
+.leaf-back { transform: rotateY(180deg); }
+/* The moving shade of a turning page. */
+.leaf-shade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(60, 46, 18, .38), rgba(60, 46, 18, .04) 46%, rgba(255, 244, 210, .22));
+}
+.no-anim .leaf { transition: none !important; }
+
+/* Corner affordances on a phone: the outer thirds of the page, top to
+   bottom, so a thumb can always find them. */
+.corner {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 15%;
+  max-width: 74px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  z-index: calc(var(--z-hud) - 1);
+  display: grid;
+  align-items: end;
+  justify-items: center;
+  padding-bottom: calc(var(--s-8) + env(safe-area-inset-bottom));
+  opacity: .5;
+  transition: opacity var(--d-shift) linear;
+}
+.corner:focus-visible { opacity: 1; }
+.corner span {
+  display: block;
+  width: 26px; height: 26px;
+  border-right: 2px solid var(--gold-lit);
+  border-bottom: 2px solid var(--gold-lit);
+  opacity: .45;
+}
+.corner-prev { left: 0; }
+.corner-prev span { transform: rotate(135deg); }
+.corner-next { right: 0; }
+.corner-next span { transform: rotate(-45deg); }
+.corner-prev:active span, .corner-next:active span { opacity: .9; }
+
+.blank-page {
+  height: 100%;
+  background:
+    repeating-linear-gradient(46deg, rgba(150, 138, 104, .1) 0 3px, transparent 3px 9px),
+    var(--vellum-2);
+}
+.page.blank-page { padding: 0; }
+
+/* Interactives and quizzes get the full page width: they are devices, not prose. */
+.page.wide > * { max-width: none; }
+.page .device {
+  margin: var(--s-6) 0;
+  padding: var(--s-4);
+  border-radius: var(--r-plate);
+  border: 1px solid var(--rule);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .56), rgba(180, 170, 140, .14));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7);
+}
+.page .device-title { margin-top: 0; }
+.relic-inline { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-3); }
+.relic-inline .tag { background: rgba(255, 255, 255, .6); border-color: var(--rule); color: var(--ink-soft); }
+.relic-inline .tag.is-found { color: var(--verify); border-color: var(--verify); }
+
+.relic-flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(30% 26% at var(--fx, 50%) var(--fy, 50%), rgba(255, 236, 170, .55), transparent 70%);
+  animation: relic-flash 1400ms var(--ease-out) forwards;
+}
+@keyframes relic-flash { from { opacity: 1; } to { opacity: 0; } }

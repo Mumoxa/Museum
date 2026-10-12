@@ -1,0 +1,335 @@
+/* ============================================================================
+   CHROME - the museum after hours.
+   The HUD is deliberately thin and low-contrast: it is a wall label in a dark
+   room, never a dashboard.
+   ========================================================================= */
+
+.shell {
+  position: relative;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background: var(--void);
+  /* The book is one column wide, always, on any screen. Nothing inside it is
+     allowed to widen the page: a strip of tools that did once pushed the whole
+     layout 51px past the edge of a 390px phone. */
+  overflow-x: clip;
+}
+.shell > * { min-width: 0; }
+.shell > main { min-width: 0; overflow-x: clip; }
+
+/* -- The locator bar ------------------------------------------------------- */
+.locator {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-hud);
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-2) clamp(var(--s-3), 2.4vw, var(--s-5));
+  padding-top: calc(var(--s-2) + env(safe-area-inset-top));
+  background: linear-gradient(180deg, rgba(11, 15, 22, .96), rgba(11, 15, 22, .74) 70%, rgba(11, 15, 22, 0));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(51, 64, 79, .5);
+}
+.locator-word {
+  font-family: var(--f-display);
+  font-size: 1.12rem;
+  font-weight: 700;
+  color: var(--d-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.locator:hover .locator-word { color: var(--gold-lit); }
+.locator-where {
+  display: block;
+  font-family: var(--f-body);
+  font-size: .74rem;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--d-text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.locator-mark {
+  flex: none;
+  width: 34px; height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-seal);
+  border: 1px solid var(--deep-line);
+  color: var(--gold-lit);
+  background: linear-gradient(180deg, var(--deep-2), var(--deep));
+}
+.locator-word { flex: 1 1 auto; min-width: var(--s-2); }
+
+/* Today's streak thread: one hairline across the top of the whole app. */
+.thread {
+  position: fixed;
+  left: 0; right: 0; top: 0;
+  height: 2px;
+  z-index: calc(var(--z-hud) + 1);
+  background: linear-gradient(90deg, var(--gold), var(--era-glow, var(--gold-lit)), var(--gold));
+  transform-origin: 0 50%;
+  transition: transform var(--d-rise) var(--ease-out);
+  pointer-events: none;
+}
+
+/* -- The rail: the turns, big, under the thumb ----------------------------- */
+.rail {
+  position: sticky;
+  bottom: 0;
+  z-index: var(--z-hud);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3) clamp(var(--s-3), 2.4vw, var(--s-5));
+  padding-bottom: calc(var(--s-3) + env(safe-area-inset-bottom));
+  /* Opaque enough to read over the page, because the page scrolls behind it. */
+  background: linear-gradient(0deg, rgba(11, 15, 22, .99), rgba(11, 15, 22, .95) 62%, rgba(11, 15, 22, .6));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.rail-turn {
+  display: grid;
+  place-items: center;
+  width: 58px; height: 58px;
+  border-radius: var(--r-seal);
+  border: 1px solid var(--deep-line);
+  background: linear-gradient(180deg, var(--deep-2), var(--deep));
+  color: var(--d-text-soft);
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), var(--lift-2);
+  transition: transform var(--d-flick) var(--ease-lift), color var(--d-flick) linear, border-color var(--d-flick) linear;
+}
+.rail-turn:hover:not(:disabled) {
+  color: #191203;
+  border-color: #8a6c14;
+  background: linear-gradient(180deg, var(--gold-lit), var(--gold));
+}
+.rail-turn:active:not(:disabled) { transform: scale(.93); }
+.rail-turn:disabled { opacity: .28; cursor: not-allowed; }
+.rail-centre { display: grid; gap: 6px; min-width: 0; }
+.rail-title {
+  font-size: .73rem;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--d-text-soft);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rail-track {
+  position: relative;
+  height: 3px;
+  border-radius: var(--r-edge);
+  background: rgba(232, 228, 218, .13);
+  overflow: hidden;
+}
+.rail-track span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg, var(--gold), var(--era-glow, var(--gold-lit)));
+  transition: width var(--d-scene) var(--ease-out);
+}
+
+/* -- The tools: one strip, above the rail, out of the reading path --------- */
+.tools {
+  position: sticky;
+  bottom: calc(58px + var(--s-6) + env(safe-area-inset-bottom));
+  z-index: calc(var(--z-hud) - 1);
+  /* Three columns, two rows on a phone: every tool stays on screen and every
+     target keeps its 44px. A single row of six would be 441px wide, which is
+     wider than a 390px phone and would push the whole book sideways. */
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-2);
+  width: min(100%, 420px);
+  justify-self: center;
+  padding: 0 var(--s-4);
+  margin: 0 auto;
+  pointer-events: none;
+}
+.tools > * { pointer-events: auto; }
+/* On a phone the tools float over the paper, so the page carries that much
+   extra room at its foot. Nothing a reader needs can end up behind a toolbar,
+   and the strip stops reading as something hovering in the middle of the text. */
+@media (max-width: 719.98px) {
+  .pane-single .page,
+  .plain { padding-bottom: calc(var(--s-9) + 118px + env(safe-area-inset-bottom)); }
+}
+
+/* On a wide screen there is room for one row, so the tools move up into the
+   running head where they belong, instead of floating over the middle of the
+   book. On a phone they stay above the turn rail, under the thumb. */
+@media (min-width: 720px) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+  .locator { grid-column: 1; grid-row: 1; }
+  .shell > main { grid-column: 1 / -1; grid-row: 2; }
+  .rail { grid-column: 1 / -1; grid-row: 3; }
+  .app-foot { grid-column: 1 / -1; }
+  .tools {
+    grid-column: 2; grid-row: 1;
+    position: sticky; top: 0; bottom: auto;
+    grid-template-columns: repeat(6, minmax(56px, auto));
+    align-items: center;
+    justify-self: end;
+    width: auto;
+    padding: 0 clamp(var(--s-3), 2.4vw, var(--s-5));
+    background: rgba(11, 15, 22, .9);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border-bottom: 1px solid rgba(51, 64, 79, .5);
+  }
+}
+.tool {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  min-width: 0;
+  min-height: 52px;
+  padding: var(--s-1) 6px;
+  border: 0;
+  border-radius: var(--r-plate);
+  background: rgba(11, 15, 22, .93);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  color: var(--d-text-faint);
+  font-size: .62rem;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color var(--d-flick) linear, background-color var(--d-flick) linear;
+}
+.tool span { white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.tool:hover { color: var(--gold-lit); background: rgba(24, 32, 44, .92); }
+.tool:active { transform: translateY(1px); }
+.tool[aria-pressed='true'] { color: var(--gold-lit); }
+.tool-count {
+  position: absolute;
+  top: 3px;
+  right: 5px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--r-seal);
+  background: var(--gold);
+  color: #191203;
+  font-size: .6rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+@media (max-width: 420px) {
+  .tool { min-width: 50px; font-size: .58rem; }
+  .rail-turn { width: 54px; height: 54px; }
+}
+
+/* The footer is part of the museum, not the book: quiet, at the very end. */
+.app-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--s-4) clamp(var(--s-3), 2.4vw, var(--s-5));
+  border-top: 1px solid var(--deep-line);
+  color: var(--d-text-faint);
+  font-size: .78rem;
+  line-height: 1.5;
+}
+.app-foot .ghost { background: transparent; border-color: var(--deep-line); color: var(--d-text-soft); min-height: 36px; }
+
+/* -- The toast: a brass nameplate sliding in, never a chat bubble --------- */
+.toasts {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(150px + env(safe-area-inset-bottom));
+  z-index: var(--z-drop);
+  display: grid;
+  gap: var(--s-2);
+  justify-items: center;
+  pointer-events: none;
+  width: min(420px, calc(100% - 24px));
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-2) var(--s-4);
+  border-radius: var(--r-plate);
+  border: 1px solid var(--gold-line);
+  background: linear-gradient(180deg, var(--deep-2), var(--deep));
+  color: var(--gold-lit);
+  font-size: .86rem;
+  font-weight: 700;
+  box-shadow: var(--lift-3);
+  animation: toast-in var(--d-rise) var(--ease-out) both;
+}
+.toast svg { flex: none; }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(14px) scale(.96); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ============================================================================
+   THE RELIC DRAWER (glossary + relic detail, one surface)
+   ========================================================================= */
+.relic-drawer {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(150px + env(safe-area-inset-bottom));
+  width: min(520px, calc(100% - 20px));
+  z-index: var(--z-drop);
+  border-radius: var(--r-plate);
+  border: 1px solid var(--deep-line);
+  border-top: 2px solid var(--gold);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .05), transparent 24%), var(--deep-2);
+  padding: var(--s-4) var(--s-5) var(--s-5);
+  box-shadow: var(--lift-3);
+  animation: drawer-up var(--d-rise) var(--ease-out) both;
+}
+@keyframes drawer-up {
+  from { opacity: 0; transform: translate(-50%, 22px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+.relic-drawer-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin-bottom: var(--s-2);
+}
+.relic-drawer-term {
+  font-family: var(--f-display);
+  font-size: 1.6rem;
+  color: var(--gold-lit);
+  margin: 0;
+}
+.relic-drawer-say {
+  font-style: italic;
+  color: var(--d-text-faint);
+  font-size: .86rem;
+}
+.relic-drawer-body { color: var(--d-text); font-size: var(--t-body-tight); }
+.relic-drawer-foot {
+  display: flex;
+  gap: var(--s-3);
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--s-3);
+  color: var(--d-text-faint);
+  font-size: .76rem;
+}
