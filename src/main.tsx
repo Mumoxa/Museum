@@ -14,6 +14,7 @@ import './styles/atlas.css';
 import './styles/reader.css';
 import './styles/chrome.css';
 import './styles/widgets.css';
+import './styles/hub.css';
 import { App } from './App';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
