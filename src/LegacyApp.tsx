@@ -29,9 +29,9 @@ import { on } from './lib/bus';
 const Atlas = lazy(() => import('./atlas/Atlas').then((m) => ({ default: m.Atlas })));
 
 export function LegacyApp() {
-  const [opened, setOpened] = useState(false);
-  const [panel, setPanel] = useState<PanelName | null>(null);
-  const [atlas, setAtlas] = useState(false);
+  const [opened, setOpened] = useState(() => new URLSearchParams(window.location.search).get('view') !== 'cover');
+  const [panel, setPanel] = useState<PanelName | null>(() => new URLSearchParams(window.location.search).get('view') === 'passport' ? 'passport' : null);
+  const [atlas, setAtlas] = useState(() => new URLSearchParams(window.location.search).get('view') === 'atlas');
   /* True only for the first arrival: the cover hands over to the map, and the
      map opens the first chapter, so the reader is walked through the doorway
      instead of being dropped in front of it. */
