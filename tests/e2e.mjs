@@ -17,7 +17,9 @@ import { existsSync } from 'node:fs';
    system copy, and it wants the flags documented in tests/README.md. */
 process.env.LD_LIBRARY_PATH = `/tmp/mchr/lib:${process.env.LD_LIBRARY_PATH ?? ''}`;
 
-const URL = process.env.APP_URL ?? 'http://localhost:4173/';
+// The historical-book regression tests explicitly open its original cover;
+// the default site now shows the new museum dashboard.
+const URL = process.env.APP_URL ?? 'http://localhost:4173/?view=cover';
 const CANDIDATES = [
   process.env.CHROME_PATH,
   '/tmp/mchr/chromium',
