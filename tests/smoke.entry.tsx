@@ -7,6 +7,7 @@
    or a chapter whose plate has gone missing, on all 116 pages, in a second.
    ========================================================================= */
 import { renderToString } from 'react-dom/server';
+import { MuseumHub } from '../src/chrome/MuseumHub';
 import type { ReactElement } from 'react';
 import { Reader } from '../src/book/Reader';
 import { PageView } from '../src/book/PageView';
@@ -36,6 +37,11 @@ function render(name: string, el: ReactElement): string {
   }
 }
 const occurrences = (html: string, needle: string) => html.split(needle).length - 1;
+
+/* ── New museum front door ────────────────────────────────────────────── */
+const hubHtml = render('family museum hub', <MuseumHub openBook={() => {}} />);
+check('hub renders the new family dashboard', hubHtml.includes('Welcome &amp; Quick Start') && hubHtml.includes('Relic Hunter Cabinet'));
+check('hub contains chapter and map navigation', hubHtml.includes('12 History Chapters') && hubHtml.includes('Historical South Africa Map'));
 
 /* ── Geometry ────────────────────────────────────────────────────────────── */
 const geo = buildAtlas();
