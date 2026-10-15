@@ -13,7 +13,7 @@
   background: var(--hub-bg);
   color: var(--hub-ink);
   min-height: 100dvh;
-  font-family: 'Atkinson Hyperlegible', 'Segoe UI', Arial, sans-serif;
+  font-family: 'Inter', 'Atkinson Hyperlegible', 'Segoe UI', Arial, sans-serif;
   font-size: 16px;
   line-height: 1.5;
   isolation: isolate;
@@ -34,7 +34,7 @@
 }
 .hub *, .hub *::before, .hub *::after { box-sizing: border-box; }
 .hub h1,.hub h2,.hub h3,.hub p { margin: 0; padding: 0; }
-.hub h1,.hub h2,.hub h3 { color: var(--hub-ink); font-family: 'Cormorant Garamond', Georgia, serif; letter-spacing: -.025em; line-height: 1.1; }
+.hub h1,.hub h2,.hub h3 { color: var(--hub-ink); font-family: 'Fraunces', 'Cormorant Garamond', Georgia, serif; letter-spacing: -.025em; line-height: 1.1; }
 .hub h2 { font-size: clamp(28px, 3vw, 39px); }
 .hub h3 { font-size: 25px; }
 .hub p { line-height: 1.55; }
@@ -57,7 +57,7 @@
 .hub-brand { display: flex; align-items: center; gap: 12px; background: transparent; color: var(--hub-ink); border: 0; padding: 0; text-align: left; }
 .hub-brand-emblem { width: 45px; height: 45px; border-radius: 14px; display: grid; place-items: center; color: #b67915; font-size: 28px; background: #fff0c6; border: 1px solid #ead49c; }
 .hub-brand-copy { display: grid; line-height: 1.2; gap: 5px; }
-.hub-brand-copy strong { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 23px; letter-spacing: -.025em; line-height: 1; }
+.hub-brand-copy strong { font-family: 'Fraunces', 'Cormorant Garamond', Georgia, serif; font-size: 23px; letter-spacing: -.025em; line-height: 1; }
 .hub-brand-copy span { color: var(--hub-muted); font-size: 12px; }
 .hub-topbar-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; justify-content: flex-end; }
 .hub-count,.hub-tool { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 8px 11px; font-size: 12px; font-weight: 700; white-space: nowrap; }
