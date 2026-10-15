@@ -1,5 +1,5 @@
-import { useEffect, useRef, useSyncExternalStore } from 'react';
-import { narrator, type NarrationUnit } from '../lib/narration';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { narrator, type NarrationUnit, type StoryMood } from '../lib/narration';
 import { useAppState, setSettings } from '../lib/store';
 import { award } from '../lib/achievements';
 
@@ -25,6 +25,16 @@ export function NarrationBar({ units, onClose, label }: { units: NarrationUnit[]
   const rate = useAppState((s) => s.settings.rate);
   const voiceURI = useAppState((s) => s.settings.voiceURI);
   const applied = useRef(false);
+  const [voiceList, setVoiceList] = useState(() => narrator.voices());
+  const [mood, setMood] = useState<StoryMood>('adventure');
+
+  useEffect(() => {
+    if (!narrator.supported) return;
+    const refresh = () => setVoiceList(narrator.voices());
+    window.speechSynthesis.addEventListener?.('voiceschanged', refresh);
+    refresh();
+    return () => window.speechSynthesis.removeEventListener?.('voiceschanged', refresh);
+  }, []);
 
   useEffect(() => {
     if (!applied.current) {
@@ -53,8 +63,8 @@ export function NarrationBar({ units, onClose, label }: { units: NarrationUnit[]
   return (
     <section className="narration" aria-label="Read aloud controls">
       <div className="narr-title">
-        <strong>Read aloud</strong>
-        <span className="muted"> {label}</span>
+        <strong>Storytime narrator</strong>
+        <span className="muted"> {label} · Expressive storytelling with breathing pauses</span>
       </div>
       <div className="narr-btns" role="group" aria-label="Narration controls">
         {!playing && !paused && (
@@ -67,10 +77,30 @@ export function NarrationBar({ units, onClose, label }: { units: NarrationUnit[]
         <button type="button" className="ghost small" disabled={!hasText && n.status === 'idle'} onClick={() => { narrator.start(units); award('narrator'); }}>Replay</button>
         <button type="button" className="ghost small" disabled={n.status === 'idle'} onClick={() => narrator.stop()}>Stop</button>
       </div>
+      <div className="narr-story-options">
+        <label className="select-label">
+          Storytelling style
+          <select value={mood} onChange={(e) => { const value = e.target.value as StoryMood; setMood(value); narrator.setMood(value); }}>
+            <option value="adventure">Exciting adventure</option>
+            <option value="gentle">Warm bedtime story</option>
+            <option value="calm">Calm discovery</option>
+          </select>
+        </label>
+        <label className="select-label">
+          Narrator voice
+          <select value={voiceURI} onChange={(e) => { setSettings({ voiceURI: e.target.value }); narrator.setVoiceByURI(e.target.value); }}>
+            <option value="">Best available voice (automatic)</option>
+            {voiceList.map((voice) => <option key={voice.voiceURI} value={voice.voiceURI}>
+              {voice.name} ({voice.lang}){!voice.localService ? ' · Enhanced' : ''}
+            </option>)}
+          </select>
+        </label>
+      </div>
+      <p className="narr-voice-note">Voice quality depends on the voices installed in this browser. For a richer sound, try an enhanced or natural-sounding English voice in the list. No recording is sent to our servers.</p>
       <label className="select-label">
         Speed
         <select value={rate} onChange={(e) => { const r = Number(e.target.value); setSettings({ rate: r }); narrator.setRate(r); }}>
-          {[0.75, 0.9, 1, 1.15, 1.3].map((r) => <option key={r} value={r}>{r}×</option>)}
+          {[0.75, 0.85, 0.9, 1, 1.1, 1.2].map((r) => <option key={r} value={r}>{r}×</option>)}
         </select>
       </label>
       <p className="narr-status" role="status" aria-live="polite">
