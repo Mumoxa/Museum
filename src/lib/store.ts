@@ -46,7 +46,7 @@ export const DEFAULT_SETTINGS: Settings = {
   soundVolume: 0.35,
   parentNotes: false,
   voiceURI: '',
-  rate: 1,
+  rate: 0.9,
   simple: false,
   scale: 'normal',
   lamp: 'warm',
