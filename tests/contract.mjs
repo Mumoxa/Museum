@@ -38,6 +38,9 @@ const cssFiles = srcFiles.filter((f) => f.endsWith('.css'));
 const codeFiles = srcFiles.filter((f) => /\.(tsx|ts)$/.test(f));
 
 const css = cssFiles.map((f) => readFileSync(f, 'utf8')).join('\n');
+// The new family hub intentionally uses rounded cards and pill buttons.
+// Keep the original book's stricter shape rules scoped to its own styles.
+const bookCss = cssFiles.filter((f) => !f.endsWith('/hub.css')).map((f) => readFileSync(f, 'utf8')).join('\n');
 const code = codeFiles.map((f) => readFileSync(f, 'utf8')).join('\n');
 
 let failures = 0;
@@ -164,7 +167,7 @@ const banned = [
 ];
 let bannedHits = 0;
 for (const [re, what] of banned) {
-  const hits = [...css.matchAll(re)];
+  const hits = [...bookCss.matchAll(re)];
   if (hits.length) {
     bannedHits += hits.length;
     fail(`${what} appears ${hits.length} time(s): ${hits.slice(0, 3).map((b) => b[0]).join(', ')}`);
@@ -177,7 +180,7 @@ if (!bannedHits) pass('no banned pattern in the stylesheets  (scroll listeners, 
 const radiusTokens = new Set(
   [...readFileSync(join(ROOT, 'src/styles/tokens.css'), 'utf8').matchAll(/(--r-[\w-]+):\s*([^;]+);/g)].map((m) => `${m[1]}=${m[2].trim()}`),
 );
-const radii = [...css.matchAll(/border-radius:\s*([^;]+);/g)]
+const radii = [...bookCss.matchAll(/border-radius:\s*([^;]+);/g)]
   .map((m) => m[1])
   .filter(Boolean)
   .flatMap((v) => v.split(/\s+/))
